@@ -597,7 +597,8 @@ export const WorkoutsProvider = ({ children }: PropsWithChildren) => {
         throw new Error('consent_required');
       }
 
-      const payload = { workoutId: id, userId: profile.id };
+      const profileId = profile.id;
+      const payload = { workoutId: id, userId: profileId };
 
       if (!isNavigatorOnline()) {
         await enqueueMutation('share-workout', payload);
@@ -606,7 +607,7 @@ export const WorkoutsProvider = ({ children }: PropsWithChildren) => {
       }
 
       try {
-        const response = await shareWorkoutRemote(id, { user_id: profile.id });
+        const response = await shareWorkoutRemote(id, { user_id: profileId });
         return { queued: false, shareId: response.share_id } as const;
       } catch (error) {
         const code = (error as any)?.code;
