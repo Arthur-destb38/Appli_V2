@@ -10,6 +10,18 @@ export type GenerateProgramPayload = {
   frequency?: number;
   user_id?: string | null;
   exercises_per_session?: number;
+  // Nouveaux paramètres de la V1
+  niveau?: string; // Débutant, Intermédiaire, Avancé
+  duree_seance?: string; // "45", "60", etc.
+  priorite?: string; // "haut", "bas", "specifique"
+  priorite_first?: string;
+  priorite_second?: string;
+  has_blessure?: boolean;
+  blessure_first?: string;
+  blessure_second?: string;
+  equipment_available?: string[];
+  cardio?: string; // "oui" ou "non"
+  methode_preferee?: string; // "fullbody", "upperlower", "split", "ppl"
 };
 
 export const generateProgram = async (payload: GenerateProgramPayload): Promise<Program> => {
@@ -24,6 +36,17 @@ export const generateProgram = async (payload: GenerateProgramPayload): Promise<
       frequency: payload.frequency ?? 3,
       user_id: payload.user_id,
       exercises_per_session: payload.exercises_per_session ?? 4,
+      niveau: payload.niveau,
+      duree_seance: payload.duree_seance,
+      priorite: payload.priorite,
+      priorite_first: payload.priorite_first,
+      priorite_second: payload.priorite_second,
+      has_blessure: payload.has_blessure ?? false,
+      blessure_first: payload.blessure_first,
+      blessure_second: payload.blessure_second,
+      equipment_available: payload.equipment_available,
+      cardio: payload.cardio,
+      methode_preferee: payload.methode_preferee,
     }),
   });
 

@@ -22,6 +22,15 @@ const CreateProgramScreen: React.FC = () => {
   const [launchingSession, setLaunchingSession] = useState<number | null>(null);
   const { createDraft, addExercise, addSet } = useWorkouts();
   const router = useRouter();
+  
+  // Nouveaux états pour les paramètres V1
+  const [niveau, setNiveau] = useState('Intermédiaire');
+  const [dureeSeance, setDureeSeance] = useState('45');
+  const [priorite, setPriorite] = useState<string>('');
+  const [hasBlessure, setHasBlessure] = useState(false);
+  const [blessureFirst, setBlessureFirst] = useState('');
+  const [equipmentAvailable, setEquipmentAvailable] = useState<string[]>([]);
+  const [methodePreferee, setMethodePreferee] = useState<string>('');
 
   const objectivePresets = useMemo(
     () => ['Hypertrophie', 'Force', 'Endurance', 'Remise en forme'],
@@ -51,6 +60,13 @@ const CreateProgramScreen: React.FC = () => {
         frequency,
         exercises_per_session: exercisesPerSession,
         duration_weeks: durationWeeks,
+        niveau,
+        duree_seance: dureeSeance,
+        priorite: priorite || undefined,
+        has_blessure: hasBlessure,
+        blessure_first: blessureFirst || undefined,
+        equipment_available: equipmentAvailable.length > 0 ? equipmentAvailable : undefined,
+        methode_preferee: methodePreferee || undefined,
       });
       setProgram(result);
     } catch (e: any) {
@@ -218,12 +234,104 @@ const CreateProgramScreen: React.FC = () => {
 
           <View style={styles.controlBlock}>
             <Text style={[styles.label, { color: theme.colors.textSecondary }]}>
+              Durée séance (min)
+            </Text>
+            <View style={styles.counter}>
+              <Pressable
+                style={[styles.chip, { backgroundColor: theme.colors.surfaceMuted }]}
+                onPress={() => setDureeSeance(String(Math.max(30, parseInt(dureeSeance) - 15)))}
+              >
+                <Text style={[styles.chipLabel, { color: theme.colors.textPrimary }]}>-</Text>
+              </Pressable>
+              <View style={styles.counterStack}>
+                <Text style={[styles.counterValue, { color: theme.colors.textPrimary }]}>
+                  {dureeSeance} min
+                </Text>
+              </View>
+              <Pressable
+                style={[styles.chip, { backgroundColor: theme.colors.surfaceMuted }]}
+                onPress={() => setDureeSeance(String(Math.min(90, parseInt(dureeSeance) + 15)))}
+              >
+                <Text style={[styles.chipLabel, { color: theme.colors.textPrimary }]}>+</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={styles.inputBlock}>
+            <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Niveau</Text>
+            <View style={styles.pills}>
+              {['Débutant', 'Intermédiaire', 'Avancé'].map((item) => {
+                const active = item === niveau;
+                return (
+                  <Pressable
+                    key={item}
+                    style={[
+                      styles.pill,
+                      {
+                        backgroundColor: active ? theme.colors.accent : theme.colors.surfaceMuted,
+                      },
+                    ]}
+                    onPress={() => setNiveau(item)}
+                  >
+                    <Text
+                      style={[
+                        styles.pillLabel,
+                        { color: active ? '#FFFFFF' : theme.colors.textPrimary },
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={styles.inputBlock}>
+            <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Méthode préférée</Text>
+            <View style={styles.pills}>
+              {['', 'fullbody', 'upperlower', 'split', 'ppl'].map((item) => {
+                const active = item === methodePreferee;
+                const label = item === '' ? 'Auto' : item.charAt(0).toUpperCase() + item.slice(1);
+                return (
+                  <Pressable
+                    key={item}
+                    style={[
+                      styles.pill,
+                      {
+                        backgroundColor: active ? theme.colors.accent : theme.colors.surfaceMuted,
+                      },
+                    ]}
+                    onPress={() => setMethodePreferee(item)}
+                  >
+                    <Text
+                      style={[
+                        styles.pillLabel,
+                        { color: active ? '#FFFFFF' : theme.colors.textPrimary },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={styles.controlBlock}>
+            <Text style={[styles.label, { color: theme.colors.textSecondary }]}>
               Blessures / contraintes
             </Text>
             <TextInput
-              value={constraints}
-              onChangeText={setConstraints}
-              placeholder="Genou fragile, pas d'overhead..."
+              value={blessureFirst}
+              onChangeText={setBlessureFirst}
+              placeholder="Genou fragile, dos..."
               placeholderTextColor={theme.colors.textSecondary}
               style={[
                 styles.input,
