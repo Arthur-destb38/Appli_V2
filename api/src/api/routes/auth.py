@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from fastapi.responses import Response
@@ -19,14 +19,14 @@ from ..utils.auth import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _get_refresh_from_header(authorization: str | None) -> str:
+def _get_refresh_from_header(authorization: Optional[str]) -> str:
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="missing_token")
     return authorization.split(" ", 1)[1]
 
 
 def _get_current_user(
-    authorization: Annotated[str | None, Header()] = None,
+    authorization: Annotated[Optional[str], Header()] = None,
     session: Session = Depends(get_session),
 ) -> User:
     if not authorization or not authorization.lower().startswith("bearer "):
@@ -73,7 +73,7 @@ def login(payload: LoginRequest, session: Session = Depends(get_session)) -> Tok
 
 @router.post("/refresh", response_model=TokenPair)
 def refresh_token(
-    authorization: Annotated[str | None, Header()] = None,
+    authorization: Annotated[Optional[str], Header()] = None,
     session: Session = Depends(get_session),
 ) -> TokenPair:
     token = _get_refresh_from_header(authorization)
@@ -106,7 +106,7 @@ def me(current_user: User = Depends(_get_current_user)) -> MeResponse:
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(
-    authorization: Annotated[str | None, Header()] = None,
+    authorization: Annotated[Optional[str], Header()] = None,
     session: Session = Depends(get_session),
 ) -> Response:
     token = _get_refresh_from_header(authorization)

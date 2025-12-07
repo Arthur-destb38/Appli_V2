@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Optional
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -12,7 +13,7 @@ from sqlmodel import Session, select, SQLModel, create_engine
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB_PATH = BASE_DIR / "gorillax.db"
 
-_ENGINE: Engine | None = None
+_ENGINE: Optional[Engine] = None
 
 
 def _database_url() -> str:

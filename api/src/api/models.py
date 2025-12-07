@@ -137,6 +137,6 @@ class Story(SQLModel, table=True):
     owner_username: str
     media_url: str
     title: str
-    link: str | None = None
+    link: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
-    expires_at: datetime | None = None
+    expires_at: Optional[datetime] = None

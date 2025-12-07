@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
@@ -10,7 +11,7 @@ from ..schemas import SyncPullResponse, SyncPushRequest, SyncPushResponse
 router = APIRouter(prefix="/sync", tags=["sync"])
 
 
-def _ms_to_datetime(value: int | None, fallback: datetime) -> datetime:
+def _ms_to_datetime(value: Optional[int], fallback: datetime) -> datetime:
     if value is None:
         return fallback
     try:

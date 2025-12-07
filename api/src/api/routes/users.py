@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 
@@ -8,7 +10,7 @@ from ..schemas import UserProfileCreate, UserProfileRead
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-def _ensure_unique_username(session, username: str, exclude_id: str | None = None) -> None:
+def _ensure_unique_username(session, username: str, exclude_id: Optional[str] = None) -> None:
     statement = select(User).where(User.username == username)
     if exclude_id is not None:
         statement = statement.where(User.id != exclude_id)

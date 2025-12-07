@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Optional
 
 from sqlalchemy import func
 from sqlmodel import Session
@@ -19,7 +20,7 @@ class SeedExercise:
     equipment: str
     description: str
     source_type: str = "local"
-    source_value: str | None = None
+    source_value: Optional[str] = None
 
 
 SEED_EXERCISES: tuple[SeedExercise, ...] = (

@@ -8,10 +8,10 @@ class ExerciseBase(BaseModel):
     name: str
     muscle_group: str
     equipment: str
-    description: str | None = None
-    image_url: str | None = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
     source_type: str = "local"
-    source_value: str | None = None
+    source_value: Optional[str] = None
 
 
 class ExerciseCreate(ExerciseBase):
@@ -117,7 +117,7 @@ class ProgramSetBase(BaseModel):
     weight: Optional[float] = None
     rpe: Optional[float] = None
     order_index: int = 0
-    notes: str | None = None
+    notes: Optional[str] = None
 
 
 class ProgramSessionBase(BaseModel):

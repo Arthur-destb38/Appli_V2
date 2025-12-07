@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
@@ -52,7 +53,7 @@ def unfollow_user(followed_id: str, payload: FollowRequest, session: Session = D
 def get_feed(
     user_id: str,
     limit: int = Query(10, ge=1, le=50),
-    cursor: str | None = Query(None),
+    cursor: Optional[str] = Query(None),
     session: Session = Depends(get_session),
 ) -> FeedResponse:
     user = session.get(User, user_id)
@@ -61,7 +62,7 @@ def get_feed(
 
     # Affiche les partages publics de tous les utilisateurs (simplifié pour le mode démo)
     statement = select(Share)
-    parsed_cursor: datetime | None = None
+    parsed_cursor: Optional[datetime] = None
     if cursor:
         parsed_cursor = datetime.fromisoformat(cursor)
         statement = statement.where(Share.created_at <= parsed_cursor)

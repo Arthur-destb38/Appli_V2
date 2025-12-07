@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlmodel import Session, select
@@ -13,10 +15,10 @@ router = APIRouter(prefix="/programs", tags=["programs"])
 
 class GenerateProgramRequest(BaseModel):
     title: str = "Programme personnalisé"
-    objective: str | None = None
+    objective: Optional[str] = None
     duration_weeks: int = 4
     frequency: int = 3
-    user_id: str | None = None
+    user_id: Optional[str] = None
     exercises_per_session: int = 4
 
 
