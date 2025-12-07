@@ -31,9 +31,15 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
+      console.log('Login attempt:', username.trim());
       await login({ username: username.trim(), password });
-      router.replace('/(tabs)');
+      console.log('Login successful, redirecting...');
+      // Attendre un peu pour que l'état se mette à jour
+      setTimeout(() => {
+        router.replace('/');
+      }, 100);
     } catch (error) {
+      console.error('Login failed:', error);
       Alert.alert(
         'Erreur de connexion',
         error instanceof Error ? error.message : 'Nom d\'utilisateur ou mot de passe incorrect'

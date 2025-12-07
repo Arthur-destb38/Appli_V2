@@ -48,9 +48,7 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await register({ username: username.trim(), password });
-      Alert.alert('Succès', 'Compte créé avec succès !', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') },
-      ]);
+      router.replace('/');
     } catch (error) {
       Alert.alert(
         'Erreur d\'inscription',

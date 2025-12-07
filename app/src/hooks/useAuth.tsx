@@ -27,17 +27,23 @@ export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
       const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
       const refreshTokenValue = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
 
+      console.log('Loading tokens - accessToken exists:', !!accessToken, 'refreshToken exists:', !!refreshTokenValue);
+
       if (accessToken && refreshTokenValue) {
         try {
+          console.log('Trying to fetch user with access token...');
           const userData = await getMe(accessToken);
+          console.log('User fetched successfully:', userData.username);
           setUser(userData);
         } catch (error) {
+          console.warn('Access token invalid, trying refresh...', error);
           // Access token expired, try to refresh
           try {
             const newTokens = await refreshToken(refreshTokenValue);
             await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, newTokens.access_token);
             await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, newTokens.refresh_token);
             const userData = await getMe(newTokens.access_token);
+            console.log('Token refreshed, user fetched:', userData.username);
             setUser(userData);
           } catch (refreshError) {
             // Refresh failed, clear tokens
@@ -49,6 +55,7 @@ export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
         }
       } else {
         // No tokens found
+        console.log('No tokens found, user not authenticated');
         setUser(null);
       }
     } catch (error) {
@@ -56,6 +63,7 @@ export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
       setUser(null);
     } finally {
       setIsLoading(false);
+      console.log('Auth loading complete - isAuthenticated:', !!user);
     }
   }, []);
 
@@ -64,11 +72,19 @@ export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
   }, [loadTokens]);
 
   const handleLogin = useCallback(async (credentials: LoginRequest) => {
-    const tokens = await login(credentials);
-    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.access_token);
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refresh_token);
-    const userData = await getMe(tokens.access_token);
-    setUser(userData);
+    try {
+      console.log('Attempting login for:', credentials.username);
+      const tokens = await login(credentials);
+      console.log('Login successful, storing tokens');
+      await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.access_token);
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refresh_token);
+      const userData = await getMe(tokens.access_token);
+      console.log('User data fetched:', userData.username);
+      setUser(userData);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   }, []);
 
   const handleRegister = useCallback(async (credentials: RegisterRequest) => {

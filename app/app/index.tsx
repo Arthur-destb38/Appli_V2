@@ -155,6 +155,7 @@ export default function HomeScreen() {
   // Redirection si pas authentifié (APRÈS tous les hooks)
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
+      console.log('Not authenticated, redirecting to login...');
       router.replace('/login');
     }
   }, [isAuthenticated, authLoading, router]);
