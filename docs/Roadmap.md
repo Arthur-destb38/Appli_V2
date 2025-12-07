@@ -310,9 +310,11 @@ But : préparer la release pour soumission et retours utilisateurs via TestFligh
 
 Sous-étapes concrètes :
 - Finaliser assets (icônes, splash), config `app.json`, `bundleIdentifier` / `applicationId`.
-- Générer builds, tester sur device réel, corriger crashs bloquants.
-- Préparer Privacy Policy + lien dans l'app.
+- Préparer Privacy Policy + lien dans l'app (consentement affiché avant partage public).
+- Déployer l'API FastAPI + DB en prod (URL publique) et pointer l'app dessus pour la partie réseau.
+- Générer builds (TestFlight / APK), tester sur device réel, corriger crashs bloquants.
 - Soumettre en TestFlight / internal track et collecter feedback.
+- **Avant build** : API FastAPI + DB déployées et accessibles (URL prod) pour que le partage réseau fonctionne sur les builds distribués.
 
 Notes légales & privacy :
 - Privacy & Data sharing : avant de permettre la publication d'une séance, l'app demandera au user d'accepter la `Privacy Policy` et de confirmer `consent_to_public_share` (opt-in). Le partage public ne sera possible que si ce consentement est actif.

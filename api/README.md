@@ -27,3 +27,9 @@ uv run pytest
 ```bash
 uv run python scripts/seed.py
 ```
+
+## Reset complet de la base
+
+```bash
+uv run python scripts/reset_db.py
+```

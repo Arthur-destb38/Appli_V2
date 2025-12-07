@@ -1,17 +1,20 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "Gorillax Gym",
+    "slug": "gorillax-gym",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "app",
+    "icon": "./assets/icon.png",
+    "scheme": "gorillax",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gorillax.gym"
     },
     "android": {
+      "package": "com.gorillax.gym",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -25,20 +28,30 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "extra": {
+      "apiUrl": "https://api.gorillax.dev",
+      "router": {},
+      "eas": {
+        "projectId": "182df57d-f5e4-4de5-845d-c9ac8a63f4fe"
+      }
+    },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/splash.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#0F0F0F",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#0F0F0F"
           }
         }
-      ]
+      ],
+      "expo-sqlite",
+      "expo-web-browser",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,

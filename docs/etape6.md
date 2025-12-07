@@ -95,6 +95,7 @@ Consistance globale
 	•	Tous les boutons ont un état visuel cohérent : hover, pressed, disabled.
 	•	Les marges et rayons sont uniformes (ex: borderRadius: 12).
 	•	Espacements verticaux constants (ex: spacing 8/16/24).
+	•	Finaliser le feed social : duplication complète d’une séance à partir du snapshot partagé (reconstruction exercices + séries), états Suivre/Suivi clairs, gestion follow/unfollow en offline avec feedback visuel/toasts.
 
 ⸻
 

@@ -1,15 +1,13 @@
-from collections.abc import Iterable
-
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlmodel import select
 
 from ..db import get_session
 from ..models import Exercise
-from ..schemas import ExerciseCreate
-from ..schemas import ExerciseRead
+from ..schemas import (
+    ExerciseCreate,
+    ExerciseRead,
+)
+from ..utils.slug import make_exercise_slug
 
 router = APIRouter(prefix="/exercises", tags=["exercises"])
 
@@ -41,7 +39,27 @@ def create_exercise(
     payload: ExerciseCreate,
     session=Depends(get_session),
 ) -> ExerciseRead:
-    exercise = Exercise(**payload.model_dump())
+    slug = make_exercise_slug(payload.name, payload.muscle_group)
+    existing = session.exec(select(Exercise).where(Exercise.slug == slug)).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "reason": "duplicate",
+                "exercise": ExerciseRead.model_validate(existing).model_dump(mode="json"),
+            },
+        )
+
+    exercise = Exercise(
+        slug=slug,
+        name=payload.name,
+        muscle_group=payload.muscle_group,
+        equipment=payload.equipment,
+        description=payload.description,
+        image_url=payload.image_url,
+        source_type=payload.source_type,
+        source_value=payload.source_value,
+    )
     session.add(exercise)
     session.commit()
     session.refresh(exercise)
@@ -50,10 +68,27 @@ def create_exercise(
 
 @router.post("/bulk", response_model=list[ExerciseRead], status_code=status.HTTP_201_CREATED)
 def create_exercises_bulk(
-    payloads: Iterable[ExerciseCreate],
+    payloads: list[ExerciseCreate] = Body(...),
     session=Depends(get_session),
 ) -> list[ExerciseRead]:
-    exercises = [Exercise(**payload.model_dump()) for payload in payloads]
+    exercises = []
+    for payload in payloads:
+        slug = make_exercise_slug(payload.name, payload.muscle_group)
+        existing = session.exec(select(Exercise).where(Exercise.slug == slug)).first()
+        if existing:
+            continue
+        exercises.append(
+            Exercise(
+                slug=slug,
+                name=payload.name,
+                muscle_group=payload.muscle_group,
+                equipment=payload.equipment,
+                description=payload.description,
+                image_url=payload.image_url,
+                source_type=payload.source_type,
+                source_value=payload.source_value,
+            )
+        )
     session.add_all(exercises)
     session.commit()
     refreshed: list[ExerciseRead] = []

@@ -1,58 +1,176 @@
-# Gorillax MVP V2
+# 🦍 Gorillax V2 — API FastAPI + App Expo
 
-Objectif : fournir une application mobile (Expo/React Native) et une API FastAPI pour créer, suivre et partager ses séances.
+Application mobile (Expo/React Native) + API FastAPI pour créer, suivre et partager des séances d'entraînement.
 
-## Structure
+---
 
-- `app/` : application mobile Expo
-- `api/` : API FastAPI
-- `docs/` : documentation
+## 🚀 Déploiement rapide (1 commande)
 
-## Pré-requis outils
+```bash
+git clone [votre-repo]
+cd V2
+./deploy.sh
+```
 
-- `pnpm` pour gérer l’app Expo
-- `uv` (ou Python 3.12+) pour l’API FastAPI
+**C'est tout !** Le script s'occupe de tout :
+- ✅ Détecte votre OS (Mac/Linux/Windows)
+- ✅ Vérifie les prérequis (Python, Node, pnpm)
+- ✅ Installe les dépendances
+- ✅ Lance l'API + l'app mobile
 
-## Commandes principales
+### Options du script
 
-### Mobile (Expo)
+```bash
+./deploy.sh              # Installation complète + lancement
+./deploy.sh --install    # Installation uniquement (sans lancer)
+./deploy.sh --api-only   # Lance seulement l'API
+./deploy.sh --app-only   # Lance seulement l'app mobile
+./deploy.sh --help       # Affiche l'aide
+```
+
+---
+
+## 📋 Prérequis
+
+| Outil | Version | Installation |
+|-------|---------|--------------|
+| **Python** | 3.10+ | [python.org](https://python.org) |
+| **Node.js** | 20 LTS | [nodejs.org](https://nodejs.org) |
+| **pnpm** | 8+ | `npm install -g pnpm` |
+
+> **Note** : Le script `deploy.sh` vérifie automatiquement ces prérequis et installe pnpm si nécessaire.
+
+---
+
+## 📁 Structure du projet
+
+```
+V2/
+├── deploy.sh          # 🚀 Script de déploiement automatisé
+├── api/               # 🐍 API FastAPI (Python)
+│   ├── src/api/       # Code source de l'API
+│   ├── scripts/       # Scripts utilitaires (seed, reset)
+│   └── migrations/    # Migrations Alembic
+├── app/               # 📱 App Mobile (Expo/React Native)
+│   ├── app/           # Écrans et navigation
+│   └── src/           # Composants, hooks, services
+└── docs/              # 📚 Documentation
+```
+
+---
+
+## 🔧 Installation manuelle (alternative)
+
+Si vous préférez installer manuellement :
+
+### 1) API FastAPI
+
+```bash
+cd api
+python3 -m venv .venv
+.venv/bin/pip install --upgrade pip
+.venv/bin/pip install fastapi uvicorn sqlmodel sqlalchemy pydantic alembic python-dotenv
+```
+
+### 2) App Expo
 
 ```bash
 cd app
 pnpm install
-pnpm lint
-pnpm start
 ```
 
-### API FastAPI
+---
+
+## ▶️ Lancement manuel
+
+### API (Terminal 1)
 
 ```bash
 cd api
-uv sync
-uv run ruff check
-uv run mypy src
-uv run pytest
-uv run uvicorn api.main:app --reload
+.venv/bin/uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 ```
 
-### Seed exercices (API)
+### App Mobile (Terminal 2)
 
 ```bash
-cd api
-uv run python scripts/seed.py
+cd app
+EXPO_PUBLIC_API_URL=http://[VOTRE_IP]:8000 EXPO_DEV_SERVER_PORT=8081 pnpm start -- --clear
 ```
 
-### Lancement combiné
+> **Tip** : Remplacez `[VOTRE_IP]` par votre IP locale (`ipconfig getifaddr en0` sur Mac)
+
+---
+
+## 🔐 Authentification (API)
+
+| Route | Méthode | Description |
+|-------|---------|-------------|
+| `/auth/register` | POST | Inscription `{username, password}` |
+| `/auth/login` | POST | Connexion `{username, password}` |
+| `/auth/refresh` | POST | Rafraîchir le token (Bearer refresh_token) |
+| `/auth/me` | GET | Profil utilisateur (Bearer access_token) |
+| `/auth/logout` | POST | Déconnexion (Bearer refresh_token) |
+
+**Exemple :**
 
 ```bash
-pnpm run dev
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"demo","password":"secret123"}'
 ```
 
-Ce script lance Expo (`app/`) et FastAPI (`api/`) en parallèle.  
-Alternative manuelle si besoin : ouvrir deux terminaux et exécuter respectivement `cd app && pnpm start` puis `cd api && uv run uvicorn api.main:app --reload`.
+---
 
-## Prochaines étapes
+## 📱 Build APK (EAS)
 
-1. Ajouter les flux CRUD complets côté API.
-2. Intégrer TanStack Query et la persistance SQLite côté app.
-3. Configurer la CI (lint + tests) et un script de lancement combiné (`pnpm dev`).
+```bash
+cd app
+pnpm dlx eas-cli build -p android --profile preview --clear-cache --non-interactive
+```
+
+---
+
+## 🐛 Dépannage
+
+| Problème | Solution |
+|----------|----------|
+| Port 8000 occupé | `lsof -i :8000` puis `kill <PID>` |
+| Port 8081 occupé | `lsof -i :8081` puis `kill <PID>` |
+| Expo erreur port 65536 | Utilisez Node 20 LTS |
+| pnpm non trouvé | `npm install -g pnpm` |
+| App ne se connecte pas à l'API | Vérifiez que vous êtes sur le même réseau Wi-Fi |
+
+---
+
+## 📚 Documentation additionnelle
+
+- [Roadmap du projet](docs/Roadmap.md)
+- [Architecture](docs/arborescence.md)
+- [Étapes de développement](docs/)
+
+---
+
+## 🛠️ Commandes utiles
+
+```bash
+# Lancer tout
+./deploy.sh
+
+# API seule
+./deploy.sh --api-only
+
+# Vérifier l'API
+curl http://localhost:8000/health
+
+# Documentation Swagger
+open http://localhost:8000/docs
+
+# Reset la base de données
+cd api && .venv/bin/python scripts/reset_db.py
+```
+
+---
+
+## 📄 Licence
+
+Projet personnel - Gorillax 🦍

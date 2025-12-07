@@ -55,6 +55,7 @@ pnpm expo build:android
 
 	3.	Signer les builds (automatiquement via Expo ou manuellement selon compte développeur).
 	4.	Tester les builds sur des devices physiques.
+	5.	Déployer l'API FastAPI + DB en prod (URL publique) et pointer l'app dessus pour la partie réseau avant toute distribution TestFlight/APK.
 
 TestFlight (iOS)
 	•	Utiliser Expo Application Services (EAS) pour créer le build et le soumettre à TestFlight.
@@ -106,7 +107,7 @@ Vérification du seed & endpoints
 	•	Les testeurs accèdent à l’app via TestFlight ou Play Console.
 	•	La Privacy Policy est accessible depuis les paramètres de l’app.
 	•	Le consentement public est demandé et persisté avant tout partage.
-	•	La base est migrée proprement via Alembic (aucune régression sur les modèles existants).
+	•	La base est migrée proprement via Alembic (aucune régression sur les modèles existants) et l’API/DB sont déployées en prod pour que le réseau fonctionne en distribution.
 	•	Les suites automatisées (lint, unitaires, intégration, Detox/E2E) tournent en CI et sont vertes avant signature.
 
 ⸻

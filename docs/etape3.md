@@ -77,16 +77,29 @@ En deux clics, l’utilisateur doit pouvoir retrouver sa dernière performance e
 🗓️ Sous-sprints recommandés
 
 **Sprint 3A — Liste & filtres offline**
-	•	Implémenter la liste triée, états empty/loading et filtres locaux.
-	•	Tests : unitaires sur formatage des séances, RTL couvrant la navigation vers le détail.
+	1. Ajouter un écran `Historique` dans la navigation (route dédiée).
+	2. Requêter la base locale pour récupérer toutes les séances (tri `updated_at DESC`).
+	3. Afficher la liste (cartes : statut, date, nombre d’exercices, durée si dispo).
+	4. Implémenter filtres : période (picker semaine/mois/tout) et filtre exercice (recherche local).
+	5. Gérer états : loading, empty, erreur.
+	6. Tests : helpers de formatage (unitaires) + test RTL (affichage & navigation vers détail).
 
 **Sprint 3B — Détail séance & duplication**
-	•	Construire la fiche séance et la duplication locale.
-	•	Tests : intégration (API mock) pour la duplication, tests de contrat `/workouts` (snapshot) dans la CI.
+	1. Créer une route `history/[id]` (ou `workout/[id]`) : récupérer le workout via `findWorkout`, gérer états loading/404.
+	2. Construire l’en-tête : titre, statut, date formatée, durée estimée (`max(done_at) - min(done_at)` si dispo), volume total.
+	3. Afficher les exercices sous forme d’accordéons/cartes : nom, nombre de séries, liste détaillée (poids × reps × RPE, `done_at`).
+	4. Bouton “Dupliquer” : cloner la séance (nouveaux `client_id`, statut `draft`, sets sans `done_at`), puis rediriger vers l’écran de création/brouillon.
+	5. Bouton “Relancer” (optionnel) : renvoyer directement vers `track/[id]` pour reprendre la séance.
+	6. Indiquer la synchronisation : badge “Synchronisée” si `server_id` défini, afficher la date de dernière synchro.
+	7. Tests : helpers (volume, durée), test d’intégration duplication (mocks repo/API), test RTL navigation `Historique → Détail` + action duplication.
 
 **Sprint 3C — Visualisation**
-	•	Intégrer le graphique (Victory ou équivalent) et calculer les métriques (charge × reps).
-	•	Tests : unitaires sur les helpers de calcul, snapshot visuel/RTL pour éviter les régressions de rendu.
+	1. Choisir la librairie graph (Victory Native / react-native-svg-charts).
+	2. Récupérer l’historique des performances pour un exercice (charge × reps ou max).
+	3. Calculer les points (date → x, métrique → y) + fallback si <3 valeurs.
+	4. Intégrer le composant graphique dans la fiche exercice/détail séance.
+	5. Ajouter options de filtre (ex : 7 derniers entraînements, 30 jours).
+	6. Tests : unitaires sur helpers de calcul, snapshot graphique/RTL (rendu stable).
 
 ⸻
 

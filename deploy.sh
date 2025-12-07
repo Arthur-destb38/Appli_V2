@@ -1,0 +1,538 @@
+#!/usr/bin/env bash
+#
+# 🦍 Gorillax - Script de déploiement automatisé
+# 
+# Usage: ./deploy.sh [options]
+#   --api-only    Lance uniquement l'API
+#   --app-only    Lance uniquement l'app mobile
+#   --install     Installe les dépendances sans lancer
+#   --help        Affiche l'aide
+#
+# Ce script:
+#   1. Détecte l'OS (Mac/Linux/Windows)
+#   2. Vérifie les prérequis (Python, Node, pnpm)
+#   3. Crée l'environnement virtuel Python
+#   4. Installe les dépendances (API + App)
+#   5. Lance l'application (API + App mobile)
+#
+
+set -e  # Arrêter en cas d'erreur
+
+# ============================================
+# COULEURS ET FORMATAGE
+# ============================================
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+BOLD='\033[1m'
+
+# ============================================
+# FONCTIONS UTILITAIRES
+# ============================================
+
+print_banner() {
+    echo -e "${CYAN}"
+    echo "  ██████╗  ██████╗ ██████╗ ██╗██╗     ██╗      █████╗ ██╗  ██╗"
+    echo "  ██╔════╝ ██╔═══██╗██╔══██╗██║██║     ██║     ██╔══██╗╚██╗██╔╝"
+    echo "  ██║  ███╗██║   ██║██████╔╝██║██║     ██║     ███████║ ╚███╔╝ "
+    echo "  ██║   ██║██║   ██║██╔══██╗██║██║     ██║     ██╔══██║ ██╔██╗ "
+    echo "  ╚██████╔╝╚██████╔╝██║  ██║██║███████╗███████╗██║  ██║██╔╝ ██╗"
+    echo "   ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝"
+    echo -e "${NC}"
+    echo -e "${BOLD}  🦍 Script de déploiement automatisé${NC}"
+    echo ""
+}
+
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[✓]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[⚠]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[✗]${NC} $1"
+}
+
+log_step() {
+    echo ""
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}  $1${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+}
+
+show_help() {
+    echo "Usage: ./deploy.sh [options]"
+    echo ""
+    echo "Options:"
+    echo "  --api-only    Lance uniquement l'API FastAPI"
+    echo "  --app-only    Lance uniquement l'app mobile Expo"
+    echo "  --install     Installe les dépendances sans lancer l'application"
+    echo "  --help        Affiche cette aide"
+    echo ""
+    echo "Exemples:"
+    echo "  ./deploy.sh              # Installation complète + lancement"
+    echo "  ./deploy.sh --install    # Installation uniquement"
+    echo "  ./deploy.sh --api-only   # Lance seulement l'API"
+    echo ""
+}
+
+# ============================================
+# DÉTECTION DE L'OS
+# ============================================
+
+detect_os() {
+    log_step "📍 Détection de l'environnement"
+    
+    case "$(uname -s)" in
+        Linux*)     OS="Linux";;
+        Darwin*)    OS="Mac";;
+        CYGWIN*|MINGW*|MSYS*) OS="Windows";;
+        *)          OS="Unknown";;
+    esac
+    
+    log_info "Système d'exploitation: ${BOLD}$OS${NC}"
+    
+    # Architecture
+    ARCH=$(uname -m)
+    log_info "Architecture: ${BOLD}$ARCH${NC}"
+    
+    if [ "$OS" = "Unknown" ]; then
+        log_error "Système d'exploitation non supporté"
+        exit 1
+    fi
+}
+
+# ============================================
+# VÉRIFICATION DES PRÉREQUIS
+# ============================================
+
+check_command() {
+    if command -v "$1" &> /dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+check_prerequisites() {
+    log_step "🔍 Vérification des prérequis"
+    
+    local missing=0
+    
+    # Python
+    if check_command python3; then
+        PYTHON_VERSION=$(python3 --version 2>&1 | cut -d' ' -f2)
+        log_success "Python 3 trouvé (v$PYTHON_VERSION)"
+        PYTHON_CMD="python3"
+    elif check_command python; then
+        PYTHON_VERSION=$(python --version 2>&1 | cut -d' ' -f2)
+        if [[ "$PYTHON_VERSION" == 3* ]]; then
+            log_success "Python 3 trouvé (v$PYTHON_VERSION)"
+            PYTHON_CMD="python"
+        else
+            log_error "Python 3 requis (trouvé: Python $PYTHON_VERSION)"
+            missing=1
+        fi
+    else
+        log_error "Python 3 non trouvé"
+        log_info "  → Installez Python 3.10+ depuis https://python.org"
+        missing=1
+    fi
+    
+    # Node.js
+    if check_command node; then
+        NODE_VERSION=$(node --version 2>&1)
+        log_success "Node.js trouvé ($NODE_VERSION)"
+        
+        # Vérifier si c'est Node 20+ (recommandé)
+        NODE_MAJOR=$(echo "$NODE_VERSION" | sed 's/v//' | cut -d'.' -f1)
+        if [ "$NODE_MAJOR" -lt 20 ]; then
+            log_warning "Node.js 20+ recommandé pour Expo (trouvé: $NODE_VERSION)"
+        fi
+    else
+        log_error "Node.js non trouvé"
+        log_info "  → Installez Node.js 20 LTS depuis https://nodejs.org"
+        missing=1
+    fi
+    
+    # pnpm
+    if check_command pnpm; then
+        PNPM_VERSION=$(pnpm --version 2>&1)
+        log_success "pnpm trouvé (v$PNPM_VERSION)"
+    else
+        log_warning "pnpm non trouvé - installation automatique..."
+        if check_command npm; then
+            npm install -g pnpm
+            if check_command pnpm; then
+                log_success "pnpm installé avec succès"
+            else
+                log_error "Échec de l'installation de pnpm"
+                missing=1
+            fi
+        else
+            log_error "npm non trouvé - impossible d'installer pnpm"
+            missing=1
+        fi
+    fi
+    
+    # Git (optionnel mais utile)
+    if check_command git; then
+        GIT_VERSION=$(git --version 2>&1 | cut -d' ' -f3)
+        log_success "Git trouvé (v$GIT_VERSION)"
+    else
+        log_warning "Git non trouvé (optionnel)"
+    fi
+    
+    if [ $missing -eq 1 ]; then
+        echo ""
+        log_error "Des prérequis sont manquants. Veuillez les installer avant de continuer."
+        exit 1
+    fi
+    
+    log_success "Tous les prérequis sont satisfaits !"
+}
+
+# ============================================
+# INSTALLATION DE L'API
+# ============================================
+
+install_api() {
+    log_step "🐍 Installation de l'API FastAPI"
+    
+    cd "$SCRIPT_DIR/api"
+    
+    # Créer l'environnement virtuel s'il n'existe pas
+    if [ ! -d ".venv" ]; then
+        log_info "Création de l'environnement virtuel Python..."
+        $PYTHON_CMD -m venv .venv
+        log_success "Environnement virtuel créé"
+    else
+        log_info "Environnement virtuel existant détecté"
+    fi
+    
+    # Activer le venv et installer les dépendances
+    log_info "Installation des dépendances Python..."
+    
+    # Déterminer le chemin d'activation selon l'OS
+    if [ "$OS" = "Windows" ]; then
+        VENV_ACTIVATE=".venv/Scripts/activate"
+        PIP_CMD=".venv/Scripts/pip"
+    else
+        VENV_ACTIVATE=".venv/bin/activate"
+        PIP_CMD=".venv/bin/pip"
+    fi
+    
+    # Upgrade pip et installer les dépendances
+    $PIP_CMD install --upgrade pip -q
+    $PIP_CMD install fastapi uvicorn sqlmodel sqlalchemy pydantic alembic python-dotenv -q
+    
+    log_success "Dépendances API installées"
+    
+    # Initialiser la base de données si nécessaire
+    if [ ! -f "src/gorillax.db" ]; then
+        log_info "Initialisation de la base de données..."
+        if [ "$OS" = "Windows" ]; then
+            .venv/Scripts/python -c "from api.db import init_db; init_db()"
+        else
+            .venv/bin/python -c "from api.db import init_db; init_db()" 2>/dev/null || true
+        fi
+        log_success "Base de données initialisée"
+    fi
+    
+    cd "$SCRIPT_DIR"
+}
+
+# ============================================
+# INSTALLATION DE L'APP MOBILE
+# ============================================
+
+install_app() {
+    log_step "📱 Installation de l'App Mobile (Expo)"
+    
+    cd "$SCRIPT_DIR/app"
+    
+    # Installer les dépendances Node
+    log_info "Installation des dépendances Node.js..."
+    pnpm install --silent 2>/dev/null || pnpm install
+    
+    log_success "Dépendances App installées"
+    
+    cd "$SCRIPT_DIR"
+}
+
+# ============================================
+# DÉTECTION DE L'IP LOCALE
+# ============================================
+
+get_local_ip() {
+    case "$OS" in
+        Mac)
+            LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "localhost")
+            ;;
+        Linux)
+            LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "localhost")
+            ;;
+        Windows)
+            LOCAL_IP=$(ipconfig | grep -i "IPv4" | head -1 | awk '{print $NF}' || echo "localhost")
+            ;;
+        *)
+            LOCAL_IP="localhost"
+            ;;
+    esac
+    
+    if [ -z "$LOCAL_IP" ] || [ "$LOCAL_IP" = "" ]; then
+        LOCAL_IP="localhost"
+    fi
+}
+
+# ============================================
+# VÉRIFICATION DES PORTS
+# ============================================
+
+check_port() {
+    local port=$1
+    if [ "$OS" = "Windows" ]; then
+        netstat -an | grep ":$port " | grep -q LISTEN && return 0 || return 1
+    else
+        lsof -i ":$port" &>/dev/null && return 0 || return 1
+    fi
+}
+
+kill_port() {
+    local port=$1
+    log_warning "Le port $port est occupé, tentative de libération..."
+    
+    if [ "$OS" = "Windows" ]; then
+        # Windows: trouver et tuer le processus
+        for pid in $(netstat -ano | grep ":$port " | grep LISTEN | awk '{print $5}'); do
+            taskkill /PID $pid /F 2>/dev/null || true
+        done
+    else
+        # Mac/Linux: utiliser lsof
+        local pid=$(lsof -ti ":$port" 2>/dev/null)
+        if [ -n "$pid" ]; then
+            kill -9 $pid 2>/dev/null || true
+            sleep 1
+        fi
+    fi
+    
+    if check_port $port; then
+        log_error "Impossible de libérer le port $port"
+        return 1
+    else
+        log_success "Port $port libéré"
+        return 0
+    fi
+}
+
+# ============================================
+# LANCEMENT DE L'API
+# ============================================
+
+start_api() {
+    log_step "🚀 Lancement de l'API FastAPI"
+    
+    cd "$SCRIPT_DIR/api"
+    
+    # Vérifier si le port 8000 est libre
+    if check_port 8000; then
+        kill_port 8000 || {
+            log_error "Le port 8000 est occupé et ne peut pas être libéré"
+            log_info "Essayez: lsof -i :8000 puis kill <PID>"
+            exit 1
+        }
+    fi
+    
+    log_info "Démarrage de l'API sur http://$LOCAL_IP:8000"
+    
+    # Lancer l'API en arrière-plan
+    if [ "$OS" = "Windows" ]; then
+        .venv/Scripts/uvicorn src.api.main:app --host 0.0.0.0 --port 8000 &
+    else
+        .venv/bin/uvicorn src.api.main:app --host 0.0.0.0 --port 8000 &
+    fi
+    
+    API_PID=$!
+    
+    # Attendre que l'API soit prête
+    log_info "Attente du démarrage de l'API..."
+    local retries=0
+    while [ $retries -lt 30 ]; do
+        if curl -s "http://localhost:8000/health" &>/dev/null; then
+            log_success "API démarrée avec succès !"
+            log_info "  → Swagger UI: http://$LOCAL_IP:8000/docs"
+            cd "$SCRIPT_DIR"
+            return 0
+        fi
+        sleep 1
+        retries=$((retries + 1))
+    done
+    
+    log_error "L'API n'a pas démarré dans les temps"
+    cd "$SCRIPT_DIR"
+    exit 1
+}
+
+# ============================================
+# LANCEMENT DE L'APP MOBILE
+# ============================================
+
+start_app() {
+    log_step "📱 Lancement de l'App Mobile (Expo)"
+    
+    cd "$SCRIPT_DIR/app"
+    
+    # Vérifier si le port 8081 est libre
+    if check_port 8081; then
+        kill_port 8081 || log_warning "Le port 8081 est occupé, Expo pourrait utiliser un autre port"
+    fi
+    
+    log_info "Configuration de l'URL de l'API: http://$LOCAL_IP:8000"
+    log_info "Démarrage d'Expo..."
+    
+    echo ""
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}  🦍 Gorillax est prêt !${NC}"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "  ${CYAN}API:${NC}     http://$LOCAL_IP:8000"
+    echo -e "  ${CYAN}Swagger:${NC} http://$LOCAL_IP:8000/docs"
+    echo -e "  ${CYAN}App:${NC}     Scannez le QR code avec Expo Go"
+    echo ""
+    echo -e "  ${YELLOW}Commandes Expo:${NC}"
+    echo -e "    ${BOLD}i${NC} → Ouvrir sur simulateur iOS"
+    echo -e "    ${BOLD}a${NC} → Ouvrir sur émulateur Android"
+    echo -e "    ${BOLD}w${NC} → Ouvrir dans le navigateur"
+    echo ""
+    echo -e "  ${RED}Ctrl+C${NC} pour arrêter"
+    echo ""
+    
+    # Lancer Expo avec les variables d'environnement
+    EXPO_PUBLIC_API_URL="http://$LOCAL_IP:8000" \
+    EXPO_DEV_SERVER_PORT=8081 \
+    pnpm start -- --clear
+}
+
+# ============================================
+# NETTOYAGE À LA FERMETURE
+# ============================================
+
+cleanup() {
+    echo ""
+    log_info "Arrêt de l'application..."
+    
+    # Tuer l'API si elle tourne
+    if [ -n "$API_PID" ]; then
+        kill $API_PID 2>/dev/null || true
+    fi
+    
+    # Tuer les processus sur les ports utilisés
+    if [ "$OS" != "Windows" ]; then
+        lsof -ti :8000 | xargs kill -9 2>/dev/null || true
+        lsof -ti :8081 | xargs kill -9 2>/dev/null || true
+    fi
+    
+    log_success "Application arrêtée proprement"
+    exit 0
+}
+
+# Capturer Ctrl+C
+trap cleanup SIGINT SIGTERM
+
+# ============================================
+# MAIN
+# ============================================
+
+main() {
+    # Récupérer le répertoire du script
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
+    # Parser les arguments
+    API_ONLY=false
+    APP_ONLY=false
+    INSTALL_ONLY=false
+    
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --api-only)
+                API_ONLY=true
+                shift
+                ;;
+            --app-only)
+                APP_ONLY=true
+                shift
+                ;;
+            --install)
+                INSTALL_ONLY=true
+                shift
+                ;;
+            --help|-h)
+                show_help
+                exit 0
+                ;;
+            *)
+                log_error "Option inconnue: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+    
+    # Afficher la bannière
+    print_banner
+    
+    # Détection de l'OS
+    detect_os
+    
+    # Vérification des prérequis
+    check_prerequisites
+    
+    # Installation
+    if [ "$APP_ONLY" = false ]; then
+        install_api
+    fi
+    
+    if [ "$API_ONLY" = false ]; then
+        install_app
+    fi
+    
+    # Si --install, on s'arrête là
+    if [ "$INSTALL_ONLY" = true ]; then
+        echo ""
+        log_success "Installation terminée avec succès !"
+        echo ""
+        log_info "Pour lancer l'application: ./deploy.sh"
+        exit 0
+    fi
+    
+    # Récupérer l'IP locale
+    get_local_ip
+    
+    # Lancement
+    if [ "$APP_ONLY" = false ]; then
+        start_api
+    fi
+    
+    if [ "$API_ONLY" = false ]; then
+        start_app
+    elif [ "$API_ONLY" = true ]; then
+        # Si API only, on attend
+        echo ""
+        log_success "API lancée sur http://$LOCAL_IP:8000"
+        log_info "Appuyez sur Ctrl+C pour arrêter"
+        wait $API_PID
+    fi
+}
+
+# Lancer le script
+main "$@"
+
