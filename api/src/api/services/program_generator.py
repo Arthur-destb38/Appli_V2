@@ -235,7 +235,7 @@ def generate_session_exercises(
     
     # Grouper les exercices par groupe musculaire
     by_group: dict[str, list[Exercise]] = defaultdict(list)
-    for ex in exercises:
+    for ex in all_exercises:
         group = ex.muscle_group.lower()
         by_group[group].append(ex)
     
