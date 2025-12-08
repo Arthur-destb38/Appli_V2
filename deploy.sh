@@ -409,7 +409,7 @@ install_api() {
     
     # Upgrade pip et installer les dépendances
     $PIP_CMD install --upgrade pip -q
-    $PIP_CMD install fastapi uvicorn sqlmodel sqlalchemy pydantic alembic python-dotenv -q
+    $PIP_CMD install fastapi uvicorn sqlmodel sqlalchemy pydantic alembic python-dotenv httpx -q
     
     log_success "Dépendances API installées"
     
