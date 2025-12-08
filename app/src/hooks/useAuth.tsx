@@ -18,52 +18,13 @@ const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 
 export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // AUTH DÉSACTIVÉE TEMPORAIREMENT
+  const [user, setUser] = useState<User | null>({ id: 'guest', username: 'Guest', created_at: new Date().toISOString(), consent_to_public_share: false });
+  const [isLoading, setIsLoading] = useState(false);
 
   const loadTokens = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
-      const refreshTokenValue = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
-
-      console.log('Loading tokens - accessToken exists:', !!accessToken, 'refreshToken exists:', !!refreshTokenValue);
-
-      if (accessToken && refreshTokenValue) {
-        try {
-          console.log('Trying to fetch user with access token...');
-          const userData = await getMe(accessToken);
-          console.log('User fetched successfully:', userData.username);
-          setUser(userData);
-        } catch (error) {
-          console.warn('Access token invalid, trying refresh...', error);
-          // Access token expired, try to refresh
-          try {
-            const newTokens = await refreshToken(refreshTokenValue);
-            await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, newTokens.access_token);
-            await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, newTokens.refresh_token);
-            const userData = await getMe(newTokens.access_token);
-            console.log('Token refreshed, user fetched:', userData.username);
-            setUser(userData);
-          } catch (refreshError) {
-            // Refresh failed, clear tokens
-            console.warn('Token refresh failed, clearing tokens', refreshError);
-            await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-            await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-            setUser(null);
-          }
-        }
-      } else {
-        // No tokens found
-        console.log('No tokens found, user not authenticated');
-        setUser(null);
-      }
-    } catch (error) {
-      console.warn('Failed to load tokens', error);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
+    // AUTH DÉSACTIVÉE - Ne rien faire
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -71,42 +32,18 @@ export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
   }, [loadTokens]);
 
   const handleLogin = useCallback(async (credentials: LoginRequest) => {
-    try {
-      console.log('Attempting login for:', credentials.username);
-      const tokens = await login(credentials);
-      console.log('Login successful, storing tokens');
-      await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.access_token);
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refresh_token);
-      const userData = await getMe(tokens.access_token);
-      console.log('User data fetched:', userData.username);
-      setUser(userData);
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
+    // AUTH DÉSACTIVÉE - Simuler une connexion réussie
+    setUser({ id: 'guest', username: 'Guest', created_at: new Date().toISOString(), consent_to_public_share: false });
   }, []);
 
   const handleRegister = useCallback(async (credentials: RegisterRequest) => {
-    const tokens = await register(credentials);
-    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.access_token);
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refresh_token);
-    const userData = await getMe(tokens.access_token);
-    setUser(userData);
+    // AUTH DÉSACTIVÉE - Simuler une inscription réussie
+    setUser({ id: 'guest', username: 'Guest', created_at: new Date().toISOString(), consent_to_public_share: false });
   }, []);
 
   const handleLogout = useCallback(async () => {
-    try {
-      const refreshTokenValue = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
-      if (refreshTokenValue) {
-        await logoutApi(refreshTokenValue);
-      }
-    } catch (error) {
-      console.warn('Logout API call failed', error);
-    } finally {
-      await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-      setUser(null);
-    }
+    // AUTH DÉSACTIVÉE - Ne rien faire
+    setUser({ id: 'guest', username: 'Guest', created_at: new Date().toISOString(), consent_to_public_share: false });
   }, []);
 
   const handleRefresh = useCallback(async () => {
@@ -126,7 +63,7 @@ export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
       value={{
         user,
         isLoading,
-        isAuthenticated: !!user,
+        isAuthenticated: true, // AUTH DÉSACTIVÉE - Toujours authentifié
         login: handleLogin,
         register: handleRegister,
         logout: handleLogout,

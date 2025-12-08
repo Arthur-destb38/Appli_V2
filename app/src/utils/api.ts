@@ -31,12 +31,12 @@ export const buildApiUrl = (path: string) => {
 };
 
 export const getAuthHeaders = async (): Promise<Record<string, string>> => {
-  const accessToken = await SecureStore.getItemAsync('access_token');
+  // AUTH DÉSACTIVÉE - Ne plus envoyer de token
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
+  // if (accessToken) {
+  //   headers.Authorization = `Bearer ${accessToken}`;
+  // }
   return headers;
 };

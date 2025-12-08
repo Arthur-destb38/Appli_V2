@@ -152,26 +152,26 @@ export default function HomeScreen() {
 
   const recentWorkouts = useMemo(() => workouts.slice(0, 5), [workouts]);
 
-  // Redirection si pas authentifié (APRÈS tous les hooks)
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      console.log('Not authenticated, redirecting to login...');
-      router.replace('/login');
-    }
-  }, [isAuthenticated, authLoading, router]);
+  // AUTH DÉSACTIVÉE - Plus de redirection vers login
+  // useEffect(() => {
+  //   if (!authLoading && !isAuthenticated) {
+  //     console.log('Not authenticated, redirecting to login...');
+  //     router.replace('/login');
+  //   }
+  // }, [isAuthenticated, authLoading, router]);
 
   // Retours conditionnels APRÈS tous les hooks
-  if (authLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
+  // if (authLoading) {
+  //   return (
+  //     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+  //       <ActivityIndicator size="large" />
+  //     </View>
+  //   );
+  // }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  // if (!isAuthenticated) {
+  //   return null;
+  // }
 
   const handleCreate = async () => {
     const draft = await createDraft();
