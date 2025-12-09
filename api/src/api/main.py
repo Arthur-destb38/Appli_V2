@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 import os
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .db import init_db
 from .routes import exercises
@@ -54,6 +55,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Gorillax API", version="0.1.0", lifespan=lifespan)
 
+# Configuration CORS pour autoriser les requêtes depuis l'app mobile
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Autorise toutes les origines (app mobile, web, etc.)
+    allow_credentials=True,
+    allow_methods=["*"],  # Autorise toutes les méthodes (GET, POST, PUT, DELETE, OPTIONS)
+    allow_headers=["*"],  # Autorise tous les headers
+)
 
 app.include_router(health.router)
 app.include_router(exercises.router)
