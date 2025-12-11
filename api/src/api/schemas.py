@@ -87,7 +87,7 @@ class SyncPushRequest(BaseModel):
 
 class SyncPushAck(BaseModel):
     queue_id: int
-    server_id: int
+    server_id: str
 
 
 class SyncPushResponse(BaseModel):
@@ -97,7 +97,7 @@ class SyncPushResponse(BaseModel):
 
 
 class SyncEventRead(BaseModel):
-    id: int
+    id: str
     action: str
     payload: dict
     created_at: datetime

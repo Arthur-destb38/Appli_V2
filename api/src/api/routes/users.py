@@ -31,6 +31,8 @@ def upsert_profile(payload: UserProfileCreate, session=Depends(get_session)) -> 
             password_hash="temp_not_for_login",
             consent_to_public_share=payload.consent_to_public_share,
         )
+
+        
         session.add(user)
     else:
         if user.username != payload.username:
