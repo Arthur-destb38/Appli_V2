@@ -9,10 +9,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 import { useAppTheme } from '@/theme/ThemeProvider';
@@ -27,6 +29,21 @@ import {
 import { followUser, unfollowUser } from '@/services/profileApi';
 
 const CURRENT_USER_ID = 'guest-user';
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const CATEGORIES = [
+  { id: 'all', label: 'Tout', icon: 'apps', gradient: ['#667eea', '#764ba2'] },
+  { id: 'force', label: 'Force', icon: 'barbell', gradient: ['#f093fb', '#f5576c'] },
+  { id: 'cardio', label: 'Cardio', icon: 'heart', gradient: ['#4facfe', '#00f2fe'] },
+  { id: 'hypertrophie', label: 'Masse', icon: 'fitness', gradient: ['#43e97b', '#38f9d7'] },
+  { id: 'perte', label: 'Perte', icon: 'flame', gradient: ['#fa709a', '#fee140'] },
+];
+
+const CHALLENGES = [
+  { id: '1', title: '100 pompes', desc: '100 pompes en 1 jour', participants: 234, icon: '💪', gradient: ['#f093fb', '#f5576c'] },
+  { id: '2', title: 'Défi 7 jours', desc: '7 séances en 7 jours', participants: 156, icon: '🔥', gradient: ['#667eea', '#764ba2'] },
+  { id: '3', title: 'PR Squad', desc: 'Bats ton PR squat', participants: 89, icon: '🏆', gradient: ['#4facfe', '#00f2fe'] },
+];
 
 export default function ExploreScreen() {
   const router = useRouter();
@@ -40,6 +57,7 @@ export default function ExploreScreen() {
   const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
   const [searching, setSearching] = useState(false);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const loadExplore = async () => {
     try {
@@ -94,36 +112,86 @@ export default function ExploreScreen() {
     }
   };
 
+  const handleCategoryPress = (catId: string) => {
+    Haptics.selectionAsync().catch(() => {});
+    setSelectedCategory(catId);
+  };
+
+  const renderCategoryChip = (cat: typeof CATEGORIES[0]) => {
+    const isSelected = selectedCategory === cat.id;
+    return (
+      <TouchableOpacity
+        key={cat.id}
+        onPress={() => handleCategoryPress(cat.id)}
+        style={styles.categoryChipWrapper}
+      >
+        {isSelected ? (
+          <LinearGradient
+            colors={cat.gradient as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.categoryChip}
+          >
+            <Ionicons name={cat.icon as any} size={16} color="#fff" />
+            <Text style={styles.categoryChipTextActive}>{cat.label}</Text>
+          </LinearGradient>
+        ) : (
+          <View style={[styles.categoryChip, { backgroundColor: theme.colors.surfaceMuted }]}>
+            <Ionicons name={cat.icon as any} size={16} color={theme.colors.textSecondary} />
+            <Text style={[styles.categoryChipText, { color: theme.colors.textSecondary }]}>
+              {cat.label}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const renderChallengeCard = (challenge: typeof CHALLENGES[0]) => (
+    <TouchableOpacity key={challenge.id} style={styles.challengeCard}>
+      <LinearGradient
+        colors={challenge.gradient as [string, string]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.challengeGradient}
+      >
+        <Text style={styles.challengeIcon}>{challenge.icon}</Text>
+        <View style={styles.challengeContent}>
+          <Text style={styles.challengeTitle}>{challenge.title}</Text>
+          <Text style={styles.challengeDesc}>{challenge.desc}</Text>
+        </View>
+        <View style={styles.challengeParticipants}>
+          <Ionicons name="people" size={14} color="rgba(255,255,255,0.8)" />
+          <Text style={styles.challengeParticipantsText}>{challenge.participants}</Text>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+
   const renderUserCard = (user: SuggestedUser) => {
     const isFollowing = followingIds.has(user.id);
     return (
-      <View
+      <TouchableOpacity
         key={user.id}
-        style={[styles.userCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+        style={[styles.userCard, { backgroundColor: theme.colors.surface }]}
+        onPress={() => router.push(`/profile/${user.id}`)}
       >
-        <TouchableOpacity
-          style={styles.userInfo}
-          onPress={() => router.push(`/profile/${user.id}`)}
+        <LinearGradient
+          colors={['#667eea', '#764ba2']}
+          style={styles.userAvatarGradient}
         >
-          <View style={[styles.userAvatar, { backgroundColor: theme.colors.accent + '25' }]}>
+          <View style={[styles.userAvatar, { backgroundColor: theme.colors.background }]}>
             <Text style={[styles.userAvatarText, { color: theme.colors.accent }]}>
               {user.username.slice(0, 2).toUpperCase()}
             </Text>
           </View>
-          <View style={styles.userDetails}>
-            <Text style={[styles.userName, { color: theme.colors.textPrimary }]}>
-              {user.username}
-            </Text>
-            {user.objective && (
-              <Text style={[styles.userObjective, { color: theme.colors.textSecondary }]}>
-                {user.objective}
-              </Text>
-            )}
-            <Text style={[styles.userStats, { color: theme.colors.textSecondary }]}>
-              {user.followers_count} abonnés · {user.posts_count} posts
-            </Text>
-          </View>
-        </TouchableOpacity>
+        </LinearGradient>
+        <Text style={[styles.userName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+          {user.username}
+        </Text>
+        <Text style={[styles.userStats, { color: theme.colors.textSecondary }]}>
+          {user.followers_count} abonnés
+        </Text>
         <TouchableOpacity
           style={[
             styles.followBtn,
@@ -131,7 +199,10 @@ export default function ExploreScreen() {
               backgroundColor: isFollowing ? theme.colors.surfaceMuted : theme.colors.accent,
             },
           ]}
-          onPress={() => handleFollow(user.id)}
+          onPress={(e) => {
+            e.stopPropagation();
+            handleFollow(user.id);
+          }}
         >
           <Text
             style={[
@@ -142,42 +213,70 @@ export default function ExploreScreen() {
             {isFollowing ? 'Suivi' : 'Suivre'}
           </Text>
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     );
   };
 
-  const renderPostCard = (post: TrendingPost, index: number) => (
-    <Pressable
-      key={post.share_id}
-      style={[
-        styles.postCard,
-        { backgroundColor: theme.colors.surfaceMuted },
-        index % 3 === 0 && styles.postCardLarge,
-      ]}
-      onPress={() => router.push(`/profile/${post.owner_id}`)}
-    >
-      <View style={styles.postIcon}>
-        <Ionicons name="barbell" size={index % 3 === 0 ? 32 : 24} color={theme.colors.accent} />
-      </View>
-      <Text
-        style={[styles.postTitle, { color: theme.colors.textPrimary }]}
-        numberOfLines={2}
+  const GRADIENTS = [
+    ['#667eea', '#764ba2'],
+    ['#f093fb', '#f5576c'],
+    ['#4facfe', '#00f2fe'],
+    ['#43e97b', '#38f9d7'],
+    ['#fa709a', '#fee140'],
+    ['#a18cd1', '#fbc2eb'],
+  ];
+
+  const renderPostCard = (post: TrendingPost, index: number) => {
+    const gradientColors = GRADIENTS[index % GRADIENTS.length];
+    const isLarge = index % 5 === 0;
+    
+    return (
+      <TouchableOpacity
+        key={post.share_id}
+        style={[
+          styles.postCard,
+          isLarge && styles.postCardLarge,
+        ]}
+        onPress={() => router.push(`/profile/${post.owner_id}`)}
       >
-        {post.workout_title}
-      </Text>
-      <View style={styles.postMeta}>
-        <Text style={[styles.postUser, { color: theme.colors.textSecondary }]}>
-          @{post.owner_username}
-        </Text>
-        <View style={styles.postLikes}>
-          <Ionicons name="heart" size={12} color={theme.colors.error} />
-          <Text style={[styles.postLikesText, { color: theme.colors.textSecondary }]}>
-            {post.like_count}
-          </Text>
-        </View>
-      </View>
-    </Pressable>
-  );
+        <LinearGradient
+          colors={gradientColors as [string, string]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.postGradient}
+        >
+          <View style={styles.postHeader}>
+            <View style={styles.postExercises}>
+              <Ionicons name="barbell" size={14} color="rgba(255,255,255,0.9)" />
+              <Text style={styles.postExercisesText}>
+                {post.exercise_count} exos
+              </Text>
+            </View>
+            <View style={styles.postLikes}>
+              <Ionicons name="heart" size={14} color="#fff" />
+              <Text style={styles.postLikesText}>{post.like_count}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.postContent}>
+            <Text style={styles.postTitle} numberOfLines={2}>
+              {post.workout_title}
+            </Text>
+            <View style={styles.postUser}>
+              <View style={styles.postUserAvatar}>
+                <Text style={styles.postUserAvatarText}>
+                  {post.owner_username.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <Text style={styles.postUserName} numberOfLines={1}>
+                {post.owner_username}
+              </Text>
+            </View>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -188,47 +287,69 @@ export default function ExploreScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
-      {/* Header avec recherche */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>Explorer</Text>
-      </View>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Header avec gradient */}
+      <LinearGradient
+        colors={[theme.colors.accent + '20', 'transparent']}
+        style={[styles.headerGradient, { paddingTop: insets.top }]}
+      >
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>
+            Explorer
+          </Text>
+          <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
+            Découvre des séances inspirantes
+          </Text>
+        </View>
 
-      {/* Barre de recherche */}
-      <View style={[styles.searchContainer, { backgroundColor: theme.colors.surfaceMuted }]}>
-        <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
-        <TextInput
-          style={[styles.searchInput, { color: theme.colors.textPrimary }]}
-          placeholder="Rechercher utilisateurs, séances..."
-          placeholderTextColor={theme.colors.textSecondary}
-          value={searchQuery}
-          onChangeText={handleSearch}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => handleSearch('')}>
-            <Ionicons name="close-circle" size={20} color={theme.colors.textSecondary} />
-          </TouchableOpacity>
-        )}
-      </View>
+        {/* Barre de recherche */}
+        <View style={[styles.searchContainer, { backgroundColor: theme.colors.surface }]}>
+          <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: theme.colors.textPrimary }]}
+            placeholder="Rechercher..."
+            placeholderTextColor={theme.colors.textSecondary}
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => handleSearch('')}>
+              <Ionicons name="close-circle" size={20} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </LinearGradient>
+
+      {/* Catégories */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoriesContainer}
+        contentContainerStyle={styles.categoriesContent}
+      >
+        {CATEGORIES.map(renderCategoryChip)}
+      </ScrollView>
 
       {/* Résultats de recherche */}
       {searchQuery.length >= 2 ? (
-        <ScrollView style={styles.searchResults}>
+        <ScrollView style={styles.searchResults} contentContainerStyle={{ paddingBottom: 100 }}>
           {searching ? (
-            <ActivityIndicator style={{ marginTop: 20 }} />
+            <ActivityIndicator style={{ marginTop: 20 }} color={theme.colors.accent} />
           ) : searchResults ? (
             <>
               {searchResults.users.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={[styles.sectionTitleSmall, { color: theme.colors.textSecondary }]}>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
                     Utilisateurs
                   </Text>
-                  {searchResults.users.map(renderUserCard)}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {searchResults.users.map(renderUserCard)}
+                  </ScrollView>
                 </View>
               )}
               {searchResults.posts.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={[styles.sectionTitleSmall, { color: theme.colors.textSecondary }]}>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
                     Séances
                   </Text>
                   <View style={styles.postsGrid}>
@@ -251,6 +372,8 @@ export default function ExploreScreen() {
         /* Contenu Explore */
         <ScrollView
           style={styles.content}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -262,55 +385,33 @@ export default function ExploreScreen() {
             />
           }
         >
+          {/* Défis */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+                🎯 Défis du moment
+              </Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.challengesScroll}>
+              {CHALLENGES.map(renderChallengeCard)}
+            </ScrollView>
+          </View>
+
           {/* Suggestions d'utilisateurs */}
           {data?.suggested_users && data.suggested_users.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
-                  Suggestions pour toi
+                  ✨ À découvrir
                 </Text>
+                <TouchableOpacity>
+                  <Text style={[styles.seeAll, { color: theme.colors.accent }]}>
+                    Voir tout
+                  </Text>
+                </TouchableOpacity>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.usersScroll}>
-                {data.suggested_users.map((user) => (
-                  <View
-                    key={user.id}
-                    style={[styles.suggestedUserCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-                  >
-                    <TouchableOpacity onPress={() => router.push(`/profile/${user.id}`)}>
-                      <View style={[styles.suggestedAvatar, { backgroundColor: theme.colors.accent + '25' }]}>
-                        <Text style={[styles.suggestedAvatarText, { color: theme.colors.accent }]}>
-                          {user.username.slice(0, 2).toUpperCase()}
-                        </Text>
-                      </View>
-                      <Text style={[styles.suggestedName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
-                        {user.username}
-                      </Text>
-                      <Text style={[styles.suggestedStats, { color: theme.colors.textSecondary }]}>
-                        {user.followers_count} abonnés
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.suggestedFollowBtn,
-                        {
-                          backgroundColor: followingIds.has(user.id)
-                            ? theme.colors.surfaceMuted
-                            : theme.colors.accent,
-                        },
-                      ]}
-                      onPress={() => handleFollow(user.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.suggestedFollowText,
-                          { color: followingIds.has(user.id) ? theme.colors.textPrimary : '#FFF' },
-                        ]}
-                      >
-                        {followingIds.has(user.id) ? 'Suivi' : 'Suivre'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                {data.suggested_users.map(renderUserCard)}
               </ScrollView>
             </View>
           )}
@@ -318,7 +419,7 @@ export default function ExploreScreen() {
           {/* Posts trending */}
           {data?.trending_posts && data.trending_posts.length > 0 && (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }, { paddingHorizontal: 16 }]}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary, paddingHorizontal: 16 }]}>
                 🔥 Tendances
               </Text>
               <View style={styles.postsGrid}>
@@ -331,12 +432,17 @@ export default function ExploreScreen() {
           {(!data?.trending_posts || data.trending_posts.length === 0) &&
            (!data?.suggested_users || data.suggested_users.length === 0) && (
             <View style={styles.emptyState}>
-              <Ionicons name="compass-outline" size={64} color={theme.colors.textSecondary} />
+              <LinearGradient
+                colors={['#667eea', '#764ba2']}
+                style={styles.emptyIconBg}
+              >
+                <Ionicons name="compass" size={40} color="#fff" />
+              </LinearGradient>
               <Text style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>
-                Rien à explorer
+                Rien à explorer pour le moment
               </Text>
               <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
-                Reviens plus tard pour découvrir du contenu
+                Les séances partagées par la communauté apparaîtront ici
               </Text>
             </View>
           )}
@@ -355,27 +461,63 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerGradient: {
+    paddingBottom: 16,
+  },
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontSize: 15,
+    marginTop: 4,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
-    marginBottom: 16,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 16,
     gap: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
+  },
+  categoriesContainer: {
+    maxHeight: 50,
+    marginBottom: 8,
+  },
+  categoriesContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  categoryChipWrapper: {
+    marginRight: 8,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 6,
+  },
+  categoryChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  categoryChipTextActive: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
   },
   searchResults: {
     flex: 1,
@@ -397,99 +539,96 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 12,
   },
-  sectionTitleSmall: {
+  seeAll: {
     fontSize: 14,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
+  },
+  challengesScroll: {
+    paddingLeft: 16,
+  },
+  challengeCard: {
+    marginRight: 12,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  challengeGradient: {
+    width: 160,
+    height: 100,
+    padding: 14,
+    justifyContent: 'space-between',
+  },
+  challengeIcon: {
+    fontSize: 24,
+  },
+  challengeContent: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  challengeTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  challengeDesc: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  challengeParticipants: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    position: 'absolute',
+    top: 12,
+    right: 12,
+  },
+  challengeParticipantsText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '600',
   },
   usersScroll: {
     paddingLeft: 16,
   },
-  suggestedUserCard: {
-    width: 140,
+  userCard: {
+    width: 130,
     padding: 16,
     marginRight: 12,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 20,
     alignItems: 'center',
     gap: 8,
   },
-  suggestedAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  suggestedAvatarText: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  suggestedName: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  suggestedStats: {
-    fontSize: 12,
-  },
-  suggestedFollowBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  suggestedFollowText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  userCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    marginBottom: 10,
-  },
-  userInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  userAvatarGradient: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    padding: 2,
   },
   userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: '100%',
+    height: '100%',
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
   userAvatarText: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
   },
-  userDetails: {
-    flex: 1,
-  },
   userName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-  },
-  userObjective: {
-    fontSize: 13,
+    textAlign: 'center',
   },
   userStats: {
     fontSize: 12,
-    marginTop: 2,
   },
   followBtn: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 10,
+    marginTop: 4,
   },
   followBtnText: {
     fontSize: 13,
@@ -499,42 +638,80 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 12,
-    gap: 8,
+    gap: 10,
   },
   postCard: {
-    width: '31%',
-    aspectRatio: 1,
-    borderRadius: 12,
-    padding: 10,
-    justifyContent: 'space-between',
+    width: (SCREEN_WIDTH - 44) / 2,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   postCardLarge: {
-    width: '48%',
+    width: SCREEN_WIDTH - 24,
+  },
+  postGradient: {
     aspectRatio: 1.2,
+    padding: 14,
+    justifyContent: 'space-between',
   },
-  postIcon: {
-    marginBottom: 4,
-  },
-  postTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    flex: 1,
-  },
-  postMeta: {
+  postHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  postUser: {
-    fontSize: 10,
+  postExercises: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  postExercisesText: {
+    fontSize: 11,
+    color: '#fff',
+    fontWeight: '600',
   },
   postLikes: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
   },
   postLikesText: {
-    fontSize: 10,
+    fontSize: 13,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  postContent: {
+    gap: 8,
+  },
+  postTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  postUser: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  postUserAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  postUserAvatarText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  postUserName: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '500',
+    flex: 1,
   },
   noResults: {
     alignItems: 'center',
@@ -547,14 +724,25 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     paddingVertical: 64,
-    gap: 12,
+    paddingHorizontal: 32,
+    gap: 16,
+  },
+  emptyIconBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
+    textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: 14,
     textAlign: 'center',
+    lineHeight: 20,
   },
 });
