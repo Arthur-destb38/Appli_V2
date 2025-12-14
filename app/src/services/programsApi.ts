@@ -3,6 +3,42 @@ import { Program } from '@/types/program';
 
 const PROGRAMS_BASE = buildApiUrl('/programs');
 
+/**
+ * Récupère la liste de tous les programmes enregistrés
+ */
+export const listPrograms = async (): Promise<Program[]> => {
+  const headers = await getAuthHeaders();
+  const response = await fetch(PROGRAMS_BASE, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || 'Impossible de récupérer les programmes');
+  }
+
+  return (await response.json()) as Program[];
+};
+
+/**
+ * Récupère un programme par son ID
+ */
+export const getProgram = async (programId: string): Promise<Program> => {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${PROGRAMS_BASE}/${programId}`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || 'Programme introuvable');
+  }
+
+  return (await response.json()) as Program;
+};
+
 export type GenerateProgramPayload = {
   title?: string;
   objective?: string;
