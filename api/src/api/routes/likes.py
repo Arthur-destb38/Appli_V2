@@ -5,7 +5,7 @@ from sqlmodel import Session, select, func
 from typing import Optional
 
 from ..db import get_session
-from ..models import Like, Share, User, Comment, Notification
+from ..models import Like, Share, User, Comment, Notification, CommentLike
 
 router = APIRouter(prefix="/likes", tags=["likes"])
 
@@ -208,7 +208,7 @@ def get_comments(share_id: str, limit: int = 20, session: Session = Depends(get_
 
 
 @router.delete("/{share_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_comment(share_id: str, comment_id: int, user_id: str, session: Session = Depends(get_session)) -> Response:
+def delete_comment(share_id: str, comment_id: str, user_id: str, session: Session = Depends(get_session)) -> Response:
     """Supprimer un commentaire (seulement par son auteur)"""
     
     comment = session.get(Comment, comment_id)
@@ -222,4 +222,64 @@ def delete_comment(share_id: str, comment_id: int, user_id: str, session: Sessio
     session.commit()
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ==================== COMMENT LIKES ====================
+
+class CommentLikeResponse(BaseModel):
+    liked: bool
+    like_count: int
+
+
+@router.post("/comment/{comment_id}/like", response_model=CommentLikeResponse)
+def toggle_comment_like(comment_id: str, payload: LikeRequest, session: Session = Depends(get_session)) -> CommentLikeResponse:
+    """Toggle like sur un commentaire"""
+    
+    # Vérifier que le commentaire existe
+    comment = session.get(Comment, comment_id)
+    if not comment:
+        raise HTTPException(status_code=404, detail="comment_not_found")
+    
+    # Chercher un like existant
+    existing_like = session.exec(
+        select(CommentLike)
+        .where(CommentLike.comment_id == comment_id)
+        .where(CommentLike.user_id == payload.user_id)
+    ).first()
+    
+    if existing_like:
+        # Unlike
+        session.delete(existing_like)
+        session.commit()
+        liked = False
+    else:
+        # Like
+        new_like = CommentLike(comment_id=comment_id, user_id=payload.user_id)
+        session.add(new_like)
+        session.commit()
+        liked = True
+    
+    # Compter les likes
+    like_count = session.exec(
+        select(func.count()).select_from(CommentLike).where(CommentLike.comment_id == comment_id)
+    ).one()
+    
+    return CommentLikeResponse(liked=liked, like_count=like_count)
+
+
+@router.get("/comment/{comment_id}/like", response_model=CommentLikeResponse)
+def get_comment_like_status(comment_id: str, user_id: str, session: Session = Depends(get_session)) -> CommentLikeResponse:
+    """Récupérer le statut de like d'un commentaire"""
+    
+    existing_like = session.exec(
+        select(CommentLike)
+        .where(CommentLike.comment_id == comment_id)
+        .where(CommentLike.user_id == user_id)
+    ).first()
+    
+    like_count = session.exec(
+        select(func.count()).select_from(CommentLike).where(CommentLike.comment_id == comment_id)
+    ).one()
+    
+    return CommentLikeResponse(liked=existing_like is not None, like_count=like_count)
 

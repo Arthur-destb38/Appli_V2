@@ -137,6 +137,14 @@ class Comment(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class CommentLike(SQLModel, table=True):
+    """Like sur un commentaire."""
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    comment_id: str = Field(index=True)
+    user_id: str = Field(index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class Follower(SQLModel, table=True):
     """Relation de suivi entre utilisateurs."""
     id: str = Field(default_factory=generate_uuid, primary_key=True)

@@ -24,9 +24,87 @@ import { useAppTheme } from '@/theme/ThemeProvider';
 import { StoriesCarousel } from '@/components/StoriesCarousel';
 import { FeedCard } from '@/components/FeedCard';
 import { fetchStories } from '@/services/storiesApi';
-import { getComments, addComment, Comment } from '@/services/likesApi';
+import { getComments, addComment, Comment, toggleCommentLike } from '@/services/likesApi';
 
 const CURRENT_USER_ID = 'guest-user'; // TODO: récupérer depuis useAuth
+
+// Composant pour afficher un commentaire avec like
+const CommentItem: React.FC<{
+  comment: Comment;
+  theme: any;
+  currentUserId: string;
+}> = ({ comment, theme, currentUserId }) => {
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLike = async () => {
+    if (isLoading) return;
+    
+    // Optimistic update
+    setLiked(!liked);
+    setLikeCount(prev => liked ? prev - 1 : prev + 1);
+    setIsLoading(true);
+    
+    try {
+      const response = await toggleCommentLike(comment.id, currentUserId);
+      setLiked(response.liked);
+      setLikeCount(response.like_count);
+    } catch (error) {
+      // Rollback
+      setLiked(liked);
+      setLikeCount(prev => liked ? prev + 1 : prev - 1);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.commentItem}>
+      <View style={[styles.commentAvatar, { backgroundColor: theme.colors.accent + '30' }]}>
+        <Text style={[styles.commentAvatarText, { color: theme.colors.accent }]}>
+          {comment.username.slice(0, 1).toUpperCase()}
+        </Text>
+      </View>
+      <View style={styles.commentContent}>
+        <View style={styles.commentBubble}>
+          <Text style={[styles.commentUsername, { color: theme.colors.textPrimary }]}>
+            {comment.username}
+          </Text>
+          <Text style={[styles.commentText, { color: theme.colors.textPrimary }]}>
+            {comment.content}
+          </Text>
+        </View>
+        <View style={styles.commentMeta}>
+          <Text style={[styles.commentDate, { color: theme.colors.textSecondary }]}>
+            {new Date(comment.created_at).toLocaleDateString('fr-FR', { 
+              day: 'numeric', 
+              month: 'short',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </Text>
+          <TouchableOpacity 
+            style={styles.commentLikeBtn} 
+            onPress={handleLike}
+            disabled={isLoading}
+          >
+            <Ionicons 
+              name={liked ? "heart" : "heart-outline"} 
+              size={14} 
+              color={liked ? '#FF3B5C' : theme.colors.textSecondary} 
+            />
+            {likeCount > 0 && (
+              <Text style={[styles.commentLikeCount, { color: theme.colors.textSecondary }]}>
+                {likeCount}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
 
 const FeedScreen: React.FC = () => {
   const { items, load, nextCursor, isLoading, error, toggleFollow, duplicate } = useFeed();
@@ -190,6 +268,7 @@ const FeedScreen: React.FC = () => {
       onProfilePress={() => router.push(`/profile/${item.owner_id}`)}
       onDuplicate={() => duplicate(item.share_id)}
       onCommentPress={() => openComments(item.share_id)}
+      onWorkoutPress={(shareId) => router.push(`/shared-workout/${shareId}`)}
     />
   );
 
@@ -372,36 +451,11 @@ const FeedScreen: React.FC = () => {
               contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
               showsVerticalScrollIndicator={false}
               renderItem={({ item }) => (
-                <View style={styles.commentItem}>
-                  <View style={[styles.commentAvatar, { backgroundColor: theme.colors.accent + '30' }]}>
-                    <Text style={[styles.commentAvatarText, { color: theme.colors.accent }]}>
-                      {item.username.slice(0, 1).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.commentContent}>
-                    <View style={styles.commentBubble}>
-                      <Text style={[styles.commentUsername, { color: theme.colors.textPrimary }]}>
-                        {item.username}
-                      </Text>
-                      <Text style={[styles.commentText, { color: theme.colors.textPrimary }]}>
-                        {item.content}
-                      </Text>
-                    </View>
-                    <View style={styles.commentMeta}>
-                      <Text style={[styles.commentDate, { color: theme.colors.textSecondary }]}>
-                        {new Date(item.created_at).toLocaleDateString('fr-FR', { 
-                          day: 'numeric', 
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </Text>
-                      <TouchableOpacity style={styles.commentLikeBtn}>
-                        <Ionicons name="heart-outline" size={14} color={theme.colors.textSecondary} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
+                <CommentItem 
+                  comment={item} 
+                  theme={theme} 
+                  currentUserId={CURRENT_USER_ID}
+                />
               )}
             />
           )}
@@ -664,7 +718,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   commentLikeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     padding: 4,
+  },
+  commentLikeCount: {
+    fontSize: 12,
   },
   commentInputContainer: {
     flexDirection: 'row',

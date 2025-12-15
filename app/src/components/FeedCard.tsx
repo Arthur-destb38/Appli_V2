@@ -6,6 +6,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Modal,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -36,6 +38,9 @@ interface FeedCardProps {
   onProfilePress?: () => void;
   onDuplicate?: () => void;
   onCommentPress?: () => void;
+  onHide?: (shareId: string) => void;
+  onReport?: (shareId: string) => void;
+  onWorkoutPress?: (shareId: string) => void;
 }
 
 export const FeedCard: React.FC<FeedCardProps> = ({
@@ -54,10 +59,15 @@ export const FeedCard: React.FC<FeedCardProps> = ({
   onProfilePress,
   onDuplicate,
   onCommentPress,
+  onHide,
+  onReport,
+  onWorkoutPress,
 }) => {
   const { theme } = useAppTheme();
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
   const lastTapRef = useRef<number>(0);
   const cardScaleAnim = useRef(new Animated.Value(1)).current;
@@ -100,6 +110,38 @@ export const FeedCard: React.FC<FeedCardProps> = ({
     }
   };
 
+  const handleHide = () => {
+    setMenuVisible(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setHidden(true);
+    onHide?.(shareId);
+  };
+
+  const handleReport = () => {
+    setMenuVisible(false);
+    Alert.alert(
+      '🚨 Signaler ce post',
+      'Pourquoi signales-tu ce post ?',
+      [
+        { text: 'Contenu inapproprié', onPress: () => submitReport('inappropriate') },
+        { text: 'Spam', onPress: () => submitReport('spam') },
+        { text: 'Harcèlement', onPress: () => submitReport('harassment') },
+        { text: 'Annuler', style: 'cancel' },
+      ]
+    );
+  };
+
+  const submitReport = (reason: string) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    Alert.alert('✅ Merci', 'Ton signalement a été envoyé. Nous allons examiner ce post.');
+    onReport?.(shareId);
+  };
+
+  // Si le post est masqué, ne pas l'afficher
+  if (hidden) {
+    return null;
+  }
+
   return (
     <Pressable onPress={handleDoubleTap}>
       <Animated.View
@@ -135,13 +177,53 @@ export const FeedCard: React.FC<FeedCardProps> = ({
               </Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.moreButton}>
+          <TouchableOpacity style={styles.moreButton} onPress={() => setMenuVisible(true)}>
             <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
-        {/* Content - Workout preview */}
-        <View style={[styles.workoutPreview, { backgroundColor: theme.colors.surfaceMuted }]}>
+        {/* Menu Modal */}
+        <Modal
+          visible={menuVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMenuVisible(false)}
+        >
+          <Pressable style={styles.menuOverlay} onPress={() => setMenuVisible(false)}>
+            <View style={[styles.menuContainer, { backgroundColor: theme.colors.surface }]}>
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={handleReport}
+              >
+                <Ionicons name="flag-outline" size={22} color="#FF6B6B" />
+                <Text style={[styles.menuItemText, { color: '#FF6B6B' }]}>Signaler</Text>
+              </TouchableOpacity>
+              <View style={[styles.menuDivider, { backgroundColor: theme.colors.border }]} />
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={handleHide}
+              >
+                <Ionicons name="eye-off-outline" size={22} color={theme.colors.textPrimary} />
+                <Text style={[styles.menuItemText, { color: theme.colors.textPrimary }]}>Masquer</Text>
+              </TouchableOpacity>
+              <View style={[styles.menuDivider, { backgroundColor: theme.colors.border }]} />
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={() => setMenuVisible(false)}
+              >
+                <Ionicons name="close-outline" size={22} color={theme.colors.textSecondary} />
+                <Text style={[styles.menuItemText, { color: theme.colors.textSecondary }]}>Annuler</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
+
+        {/* Content - Workout preview (cliquable) */}
+        <TouchableOpacity 
+          style={[styles.workoutPreview, { backgroundColor: theme.colors.surfaceMuted }]}
+          onPress={() => onWorkoutPress?.(shareId)}
+          activeOpacity={0.7}
+        >
           <View style={styles.workoutIcon}>
             <Ionicons name="barbell" size={32} color={theme.colors.accent} />
           </View>
@@ -164,14 +246,20 @@ export const FeedCard: React.FC<FeedCardProps> = ({
               </View>
             </View>
           </View>
-        </View>
+          <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+        </TouchableOpacity>
 
         {/* Actions - Like, Comment, Save */}
         <View style={styles.actions}>
           <View style={styles.leftActions}>
             <LikeButton liked={liked} likeCount={likeCount} onToggle={handleLike} />
-            <TouchableOpacity style={styles.actionButton} onPress={onCommentPress}>
+            <TouchableOpacity style={styles.commentButton} onPress={onCommentPress}>
               <Ionicons name="chatbubble-outline" size={22} color={theme.colors.textSecondary} />
+              {commentCount > 0 && (
+                <Text style={[styles.commentCountText, { color: theme.colors.textSecondary }]}>
+                  {commentCount}
+                </Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
               <Ionicons name="paper-plane-outline" size={22} color={theme.colors.textSecondary} />
@@ -271,6 +359,37 @@ const styles = StyleSheet.create({
   moreButton: {
     padding: 4,
   },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuContainer: {
+    width: 280,
+    borderRadius: 16,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  menuDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: 16,
+  },
   workoutPreview: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -322,6 +441,16 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 8,
+  },
+  commentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    gap: 4,
+  },
+  commentCountText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   saveButton: {
     flexDirection: 'row',

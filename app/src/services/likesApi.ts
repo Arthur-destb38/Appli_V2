@@ -139,4 +139,27 @@ export async function deleteComment(shareId: string, commentId: string, userId: 
   }
 }
 
+/**
+ * Toggle like sur un commentaire
+ */
+export async function toggleCommentLike(commentId: string, userId: string): Promise<LikeResponse> {
+  const baseUrl = getApiBaseUrl();
+  const headers = await getAuthHeaders();
+
+  const response = await fetch(`${baseUrl}/likes/comment/${commentId}/like`, {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ user_id: userId }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to toggle comment like: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 
