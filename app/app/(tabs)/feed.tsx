@@ -184,6 +184,9 @@ const FeedScreen: React.FC = () => {
       setCount={item.set_count}
       createdAt={item.created_at}
       currentUserId={CURRENT_USER_ID}
+      initialLikeCount={item.like_count || 0}
+      comments={item.comments || []}
+      commentCount={item.comment_count || 0}
       onProfilePress={() => router.push(`/profile/${item.owner_id}`)}
       onDuplicate={() => duplicate(item.share_id)}
       onCommentPress={() => openComments(item.share_id)}

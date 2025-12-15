@@ -14,6 +14,12 @@ import { useAppTheme } from '@/theme/ThemeProvider';
 import { LikeButton, DoubleTapHeart } from './LikeButton';
 import { toggleLike } from '@/services/likesApi';
 
+interface CommentPreview {
+  id: string;
+  username: string;
+  content: string;
+}
+
 interface FeedCardProps {
   shareId: string;
   ownerId: string;
@@ -25,6 +31,8 @@ interface FeedCardProps {
   initialLiked?: boolean;
   initialLikeCount?: number;
   currentUserId: string;
+  comments?: CommentPreview[];
+  commentCount?: number;
   onProfilePress?: () => void;
   onDuplicate?: () => void;
   onCommentPress?: () => void;
@@ -41,6 +49,8 @@ export const FeedCard: React.FC<FeedCardProps> = ({
   initialLiked = false,
   initialLikeCount = 0,
   currentUserId,
+  comments = [],
+  commentCount = 0,
   onProfilePress,
   onDuplicate,
   onCommentPress,
@@ -191,11 +201,31 @@ export const FeedCard: React.FC<FeedCardProps> = ({
           </Text>
         </View>
 
-        {/* View comments link */}
-        <TouchableOpacity onPress={onCommentPress}>
-          <Text style={[styles.viewComments, { color: theme.colors.textSecondary }]}>
-            Voir les commentaires
-          </Text>
+        {/* Comments preview */}
+        {comments.length > 0 && (
+          <View style={styles.commentsPreview}>
+            {comments.slice(0, 2).map((comment) => (
+              <View key={comment.id} style={styles.commentPreviewItem}>
+                <Text style={{ color: theme.colors.textPrimary }} numberOfLines={2}>
+                  <Text style={styles.commentPreviewUsername}>{comment.username}</Text>
+                  {' '}{comment.content}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* View all comments link */}
+        <TouchableOpacity onPress={onCommentPress} style={styles.viewCommentsBtn}>
+          {commentCount > 0 ? (
+            <Text style={[styles.viewComments, { color: theme.colors.textSecondary }]}>
+              Voir les {commentCount} commentaire{commentCount > 1 ? 's' : ''}
+            </Text>
+          ) : (
+            <Text style={[styles.viewComments, { color: theme.colors.textSecondary }]}>
+              Ajouter un commentaire...
+            </Text>
+          )}
         </TouchableOpacity>
       </Animated.View>
     </Pressable>
@@ -318,9 +348,22 @@ const styles = StyleSheet.create({
   captionUsername: {
     fontWeight: '700',
   },
-  viewComments: {
+  commentsPreview: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingTop: 8,
+    gap: 6,
+  },
+  commentPreviewItem: {
+    flexDirection: 'row',
+  },
+  commentPreviewUsername: {
+    fontWeight: '700',
+  },
+  viewCommentsBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  viewComments: {
     fontSize: 13,
   },
 });

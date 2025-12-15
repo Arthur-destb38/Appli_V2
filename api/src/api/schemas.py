@@ -62,6 +62,12 @@ class FollowRequest(BaseModel):
     follower_id: str
 
 
+class CommentPreview(BaseModel):
+    id: str
+    username: str
+    content: str
+
+
 class FeedItem(BaseModel):
     share_id: str
     owner_id: str
@@ -70,6 +76,9 @@ class FeedItem(BaseModel):
     exercise_count: int
     set_count: int
     created_at: datetime
+    like_count: int = 0
+    comment_count: int = 0
+    comments: list[CommentPreview] = []
 
 
 class FeedResponse(BaseModel):

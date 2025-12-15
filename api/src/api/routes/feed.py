@@ -8,7 +8,7 @@ from fastapi.responses import Response
 from sqlmodel import Session, select
 
 from ..db import get_session
-from ..models import Follower, Share, User
+from ..models import Follower, Share, User, Comment, Like
 from ..schemas import FeedResponse, FeedItem, FollowRequest
 
 router = APIRouter(prefix="/feed", tags=["feed"])
@@ -84,8 +84,21 @@ def get_feed(
         next_cursor = shares[-1].created_at
         shares = shares[:limit]
 
-    items = [
-        {
+    items = []
+    for share in shares:
+        # Récupérer les commentaires (limité à 2 pour l'aperçu)
+        comments_stmt = select(Comment).where(Comment.share_id == share.share_id).order_by(Comment.created_at.desc()).limit(2)
+        comments = session.exec(comments_stmt).all()
+        
+        # Compter le total des commentaires
+        comment_count_stmt = select(Comment).where(Comment.share_id == share.share_id)
+        comment_count = len(session.exec(comment_count_stmt).all())
+        
+        # Compter les likes
+        like_count_stmt = select(Like).where(Like.share_id == share.share_id)
+        like_count = len(session.exec(like_count_stmt).all())
+        
+        items.append({
             'share_id': share.share_id,
             'owner_id': share.owner_id,
             'owner_username': share.owner_username,
@@ -93,9 +106,17 @@ def get_feed(
             'exercise_count': share.exercise_count,
             'set_count': share.set_count,
             'created_at': share.created_at,
-        }
-        for share in shares
-    ]
+            'like_count': like_count,
+            'comment_count': comment_count,
+            'comments': [
+                {
+                    'id': c.id,
+                    'username': c.username,
+                    'content': c.content,
+                }
+                for c in reversed(comments)  # Ordre chronologique pour l'affichage
+            ],
+        })
 
     cursor_value = next_cursor.isoformat() if next_cursor else None
     return FeedResponse(items=items, next_cursor=cursor_value)
