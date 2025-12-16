@@ -34,6 +34,15 @@ git clone https://github.com/Arthur-destb38/Appli_V2.git
 cd Appli_V2/V2
 ./deploy.sh
 ```
+### ou peut etre essayer 
+
+```bash
+git clone https://github.com/Arthur-destb38/Appli_V2.git
+cd Appli_V2
+chmod +x deploy.sh   # Si nécessaire
+./deploy.sh
+```
+
 
 Le script fait tout : il installe les dépendances, lance l'API, charge les données de démo, et démarre l'app. À la fin tu scannes le QR code avec Expo Go et c'est bon.
 
