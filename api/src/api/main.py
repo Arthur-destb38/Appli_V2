@@ -21,6 +21,7 @@ from .routes import auth
 from .routes import shared_workouts
 from .routes import sync
 from .routes import users
+from .routes import seed
 from .seeds import seed_exercises
 from .services.exercise_loader import import_exercises_from_url
 from sqlmodel import Session, select, func
@@ -85,6 +86,7 @@ app.include_router(profile.router)
 app.include_router(explore.router)
 app.include_router(notifications.router)
 app.include_router(leaderboard.router)
+app.include_router(seed.router)
 
 
 @app.get("/", tags=["meta"], summary="API metadata")
