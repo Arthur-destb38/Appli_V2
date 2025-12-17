@@ -440,6 +440,28 @@ install_api() {
     
     log_success "Dépendances API installées"
     
+    # Créer le fichier .env s'il n'existe pas
+    if [ ! -f ".env" ]; then
+        log_info "Création du fichier .env par défaut..."
+        cat > .env << 'EOF'
+# Configuration Gorillax API
+# Généré automatiquement par deploy.sh
+
+# Clé secrète pour l'authentification JWT
+# (Changez cette valeur en production !)
+AUTH_SECRET=gorillax-dev-secret-change-in-production
+
+# URL de la base de données (optionnel, SQLite par défaut)
+# DATABASE_URL=sqlite:///./src/gorillax.db
+
+# URL du fichier d'exercices (optionnel)
+# EXERCISES_URL=https://example.com/exercises.json
+EOF
+        log_success "Fichier .env créé avec les valeurs par défaut"
+    else
+        log_info "Fichier .env existant détecté"
+    fi
+    
     # Initialiser la base de données si nécessaire
     if [ ! -f "src/gorillax.db" ]; then
         log_info "Initialisation de la base de données..."
@@ -618,6 +640,23 @@ start_app() {
                 pnpm add @expo/ngrok 2>/dev/null || npm install @expo/ngrok 2>/dev/null
             }
         fi
+    fi
+    
+    # =============================================
+    # MISE À JOUR AUTOMATIQUE DE L'IP LOCALE
+    # =============================================
+    local API_CONFIG_FILE="$SCRIPT_DIR/app/src/utils/api.ts"
+    if [ -f "$API_CONFIG_FILE" ]; then
+        log_info "Mise à jour de l'IP locale dans api.ts..."
+        # Remplacer l'IP dans la ligne LOCAL_API_IP
+        if [ "$OS" = "Mac" ]; then
+            sed -i '' "s|const LOCAL_API_IP = 'http://[^']*'|const LOCAL_API_IP = 'http://$LOCAL_IP:8000'|g" "$API_CONFIG_FILE"
+        else
+            sed -i "s|const LOCAL_API_IP = 'http://[^']*'|const LOCAL_API_IP = 'http://$LOCAL_IP:8000'|g" "$API_CONFIG_FILE"
+        fi
+        log_success "IP locale configurée: $LOCAL_IP"
+    else
+        log_warning "Fichier api.ts non trouvé, configuration manuelle requise"
     fi
     
     log_info "Configuration de l'URL de l'API: http://$LOCAL_IP:8000"
