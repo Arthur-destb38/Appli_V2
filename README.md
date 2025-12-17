@@ -31,7 +31,7 @@ En gros, c'est un peu le Strava de la muscu.
 
 ```bash
 git clone https://github.com/Arthur-destb38/Appli_V2.git
-cd Appli_V2/V2
+cd Appli_V2
 ./deploy.sh
 ```
 ### ou peut etre essayer 
