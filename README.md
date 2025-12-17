@@ -44,9 +44,9 @@ chmod +x deploy.sh   # Si nécessaire
 ```
 
 
-Le script fait tout : il installe les dépendances, lance l'API, charge les données de démo, et démarre l'app. À la fin tu scannes le QR code avec Expo Go et c'est bon.
+Le script fait tout : il installe les dépendances, lance l'API, charge les données de démo, et démarre l'app. À la fin tu scannes le QR code avec Expo Go et c'est bon. Ou alors plus simple tu cliques sur le lien : http://localhost:xxxx.
 
-> Le tel et l'ordi doivent être sur le même WiFi.
+> Le tel et l'ordi doivent être sur le même WiFi si tu utilises ExpoGo.
 
 ### Options utiles
 
