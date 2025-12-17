@@ -148,13 +148,12 @@ On devait faire une app mobile avec API. Voilà ce qu'on a fait :
 
 - **App fonctionnelle** : Oui, y'a 20+ écrans, ça marche sur iOS/Android/Web
 - **API REST** : FastAPI avec tous les endpoints documentés
-- **Base de données** : SQLite côté serveur et côté client
+- **Base de données** : SQLite côté serveur et côté client et pour les programmes, on prend une base de données sur google drive
 - **Auth** : JWT tokens
 - **Mode offline** : SQLite local + sync
 - **Déploiement** : Script bash automatisé + API sur Render
 - **Données de démo** : 10 utilisateurs fictifs avec des séances, likes, commentaires
 
-On est allés plus loin que le minimum en ajoutant tout le côté social (feed, likes, commentaires, followers, classements).
 
 ---
 
